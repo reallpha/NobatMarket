@@ -1,0 +1,10 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  PAYMENT_MODE = "mock"
+  ZARINPAL_SANDBOX = "true"
+  STORAGE_PROVIDER = "local"
+  FILE_STORAGE_PROVIDER = "local"
