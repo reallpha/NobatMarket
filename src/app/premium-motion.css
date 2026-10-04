@@ -1,0 +1,189 @@
+/* ============================================================================
+   Premium Motion System — Hero + Cards
+   ============================================================================ */
+
+/* Orbit animation for floating orbs */
+@keyframes orbit-1 {
+  0% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(30px, -40px) scale(1.05); }
+  50% { transform: translate(-20px, -60px) scale(0.95); }
+  75% { transform: translate(40px, -20px) scale(1.08); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orbit-2 {
+  0% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(-40px, 30px) scale(1.1); }
+  66% { transform: translate(20px, -30px) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+@keyframes orbit-3 {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  50% { transform: translate(25px, -35px) rotate(180deg); }
+  100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+.animate-orbit-1 { animation: orbit-1 20s ease-in-out infinite; }
+.animate-orbit-2 { animation: orbit-2 25s ease-in-out infinite; }
+.animate-orbit-3 { animation: orbit-3 30s ease-in-out infinite; }
+
+/* Glow breathe for hero title */
+@keyframes glow-breathe {
+  0%, 100% { text-shadow: 0 0 20px rgba(244,63,94,0.3), 0 0 60px rgba(244,63,94,0.1); }
+  50% { text-shadow: 0 0 40px rgba(244,63,94,0.5), 0 0 80px rgba(244,63,94,0.2), 0 0 120px rgba(244,63,94,0.1); }
+}
+
+.animate-glow-breathe {
+  animation: glow-breathe 4s ease-in-out infinite;
+}
+
+/* Hero mesh gradient rotation */
+@keyframes hero-mesh-spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
+  33% { transform: translate(-50%, -50%) rotate(120deg) scale(1.1); }
+  66% { transform: translate(-50%, -50%) rotate(240deg) scale(0.95); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1); }
+}
+
+.animate-hero-mesh {
+  animation: hero-mesh-spin 30s linear infinite;
+}
+
+/* Glass shimmer on hover */
+@keyframes glass-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.glass-shimmer-hover {
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-shimmer-hover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%);
+  background-size: 200% 100%;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.glass-shimmer-hover:hover::after {
+  opacity: 1;
+  animation: glass-shimmer 1.5s ease-in-out;
+}
+
+/* Magnetic button hover */
+@keyframes btn-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(244,63,94,0.3); }
+  50% { box-shadow: 0 0 40px rgba(244,63,94,0.5), 0 0 60px rgba(244,63,94,0.2); }
+}
+
+.btn-glow {
+  animation: btn-glow 3s ease-in-out infinite;
+}
+
+/* Floating label animation */
+@keyframes float-label {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-float-label {
+  animation: float-label 3s ease-in-out infinite;
+}
+
+/* Card tilt on hover (pure CSS) */
+.card-tilt {
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.card-tilt:hover {
+  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg) translateY(-4px);
+}
+
+/* Gradient border animation */
+@keyframes gradient-border {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.gradient-border-animated {
+  position: relative;
+}
+
+.gradient-border-animated::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #f43f5e, #a855f7, #06b6d4, #f43f5e);
+  background-size: 300% 300%;
+  animation: gradient-border 6s ease infinite;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gradient-border-animated:hover::before {
+  opacity: 1;
+}
+
+/* Noise texture */
+.noise-bg::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  z-index: 1;
+}
+
+/* Parallax scroll hint */
+@keyframes scroll-hint {
+  0%, 100% { opacity: 0.5; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(8px); }
+}
+
+.animate-scroll-hint {
+  animation: scroll-hint 2s ease-in-out infinite;
+}
+
+/* Section divider line glow */
+.section-divider {
+  position: relative;
+}
+
+.section-divider::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(244,63,94,0.4), transparent);
+}
+
+/* Review card slide */
+@keyframes review-slide-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.animate-review-slide {
+  animation: review-slide-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Mobile touch feedback */
+@media (hover: none) {
+  .card-tilt:active {
+    transform: scale(0.98);
+  }
+}

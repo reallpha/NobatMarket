@@ -1,0 +1,41 @@
+# ============================================================================
+# Docker Ignore - نوبت مارکت
+# ============================================================================
+
+# وابستگی‌ها (از مرحله deps نصب می‌شوند)
+node_modules
+
+# بیلد Next.js (از مرحله builder ساخته می‌شود)
+.next
+
+# فایل‌های Git
+.git
+.gitignore
+
+# فایل‌های IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# فایل‌های سیستمی
+.DS_Store
+Thumbs.db
+
+# محیط محلی (docker-compose خودش .env را می‌خواند)
+.env.local
+.env.development
+.env.production
+
+# داکیومنت
+README.md
+DEPLOYMENT.md
+LICENSE
+
+# تست
+*.test.*
+__tests__
+coverage
+
+# فایل‌های آپلود شده (از volume مونت می‌شود)
+public/uploads/*

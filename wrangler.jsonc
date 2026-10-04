@@ -1,0 +1,27 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nobat-market-preview",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2025-03-25",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    "NODE_ENV": "production",
+    "NEXTAUTH_SECRET": "demo-preview-secret-not-used-for-authentication",
+    "APP_URL": "",
+    "PAYMENT_MODE": "mock",
+    "ZARINPAL_MERCHANT_ID": "demo-merchant-id",
+    "ZARINPAL_SANDBOX": "true",
+    "ZARINPAL_CALLBACK_URL": "",
+    "STORAGE_PROVIDER": "local",
+    "FILE_STORAGE_PROVIDER": "local",
+    "INTERNAL_API_SECRET": "demo-internal-secret",
+    "CRON_SECRET": "demo-cron-secret"
+  }
+}

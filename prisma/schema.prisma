@@ -1,0 +1,2167 @@
+// ============================================================================
+// پروژه: نوبت مارکت (NOBAT_MARKET)
+// توضیح: اسکیمای پایگاه داده اصلی پلتفرم بازار و رزرو تتو
+// نسخه: 1.0.0
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// انوم‌ها (Enumerations)
+// ============================================================================
+
+/// نقش‌های کاربران در سیستم
+enum UserRole {
+  /// کاربر عادی (مشتری)
+  CLIENT
+  /// هنرمند تتو
+  ARTIST
+  /// مدیر سیستم
+  ADMIN
+}
+
+/// وضعیت حساب کاربری
+enum UserStatus {
+  /// فعال
+  ACTIVE
+  /// غیرفعال
+  INACTIVE
+  /// معلق (مسدود شده توسط ادمین)
+  SUSPENDED
+  /// در انتظار تأیید
+  PENDING_VERIFICATION
+}
+
+/// جنسیت
+enum Gender {
+  /// مرد
+  MALE
+  /// زن
+  FEMALE
+  /// ترجیح می‌دهم نگویم
+  OTHER
+}
+
+/// سبک‌های تتو
+enum TattooStyle {
+  /// بلک‌ورک (سیاه‌کاری)
+  BLACKWORK
+  /// رئالیسم (واقع‌گرایانه)
+  REALISM
+  /// ژئومتریک (هندسی)
+  GEOMETRIC
+  /// مینیمال (ساده و ظریف)
+  MINIMAL
+  /// آبستره (انتزاعی)
+  ABSTRACT
+  /// اולד اسکول (سنتی غربی)
+  OLD_SCHOOL
+  /// نئو- trad
+  NEO_TRADITIONAL
+  /// آبی و خاکستری
+  BLACK_AND_GREY
+  /// رنگی
+  COLOR
+  /// لاین آرت (خطی)
+  LINE_ART
+  /// فاین لاین
+  FINE_LINE
+  /// دات‌ورک (نقطه‌ای)
+  DOTWORK
+  /// ژاپنی (ایرزوکا)
+  JAPANESE
+  /// مائوری
+  TRIBAL
+  /// واتروکالر (آبی رنگ)
+  WATERCOLOR
+  /// لترینگ (خوشنویسی فارسی/عربی)
+  LETTERING
+  /// بیو mech (مکانیکی زیستی)
+  BIOMECHANICAL
+  /// چیکان‌스타일 (ژاپنی معاصر)
+  CHICANO
+  /// سایر
+  OTHER
+}
+
+/// وضعیت پورتفولیو آیتم
+enum PortfolioStatus {
+  /// منتشر شده
+  PUBLISHED
+  /// پیش‌نویس
+  DRAFT
+  /// بایگانی شده
+  ARCHIVED
+}
+
+/// وضعیت رزرو
+enum BookingStatus {
+  /// درخواست شده (در انتظار تأیید ادمین)
+  REQUESTED
+  /// در انتظار تأیید هنرمند (ادمین تأیید کرده)
+  PENDING_ARTIST
+  /// تأیید شده
+  CONFIRMED
+  /// در حال انجام
+  IN_PROGRESS
+  /// تکمیل شده
+  COMPLETED
+  /// لغو شده توسط مشتری
+  CANCELLED_BY_CLIENT
+  /// لغو شده توسط هنرمند
+  CANCELLED_BY_ARTIST
+  /// عدم حضور مشتری
+  NO_SHOW
+  /// به‌روزرسانی نیاز دارد (تغییر زمان)
+  RESCHEDULE_PENDING
+}
+
+/// وضعیت پرداخت
+enum PaymentStatus {
+  /// در انتظار پرداخت
+  PENDING
+  /// پرداخت شده
+  PAID
+  /// بازپرداخت شده (کامل)
+  REFUNDED
+  /// بازپرداخت جزئی
+  PARTIALLY_REFUNDED
+  /// ناموفق
+  FAILED
+  /// لغو شده
+  CANCELLED
+}
+
+/// روش پرداخت
+enum PaymentMethod {
+  /// درگاه زرین‌پال
+  ZARINPAL
+  /// درگاه نکست‌پی
+  NEXTPAY
+  /// کیف پول نوبت مارکت
+  WALLET
+  /// نقدی (حضوری)
+  CASH
+}
+
+/// نوع تراکنش کیف پول
+enum TransactionType {
+  /// واریز (شارژ کیف پول)
+  DEPOSIT
+  /// برداشت (انتقال به حساب بانکی)
+  WITHDRAWAL
+  /// درآمد از رزرو
+  BOOKING_INCOME
+  /// کارمزد پلتفرم
+  PLATFORM_FEE
+  /// بازپرداخت
+  REFUND
+  /// جایزه معرفی
+  REFERRAL_BONUS
+}
+
+/// وضعیت پیام
+enum MessageStatus {
+  /// ارسال شده
+  SENT
+  /// تحویل شده
+  DELIVERED
+  /// خوانده شده
+  READ
+}
+
+/// وضعیت درخواست سفارشی
+enum CustomRequestStatus {
+  /// جدید
+  NEW
+  /// در حال بررسی
+  UNDER_REVIEW
+  /// پیشنهاد ارسال شده
+  QUOTE_SENT
+  /// تأیید شده
+  ACCEPTED
+  /// رد شده
+  REJECTED
+  /// منقضی شده
+  EXPIRED
+}
+
+/// پلن اشتراک هنرمند
+enum ArtistPlan {
+  /// رایگان
+  FREE
+  /// حرفه‌ای
+  PRO
+  /// استودیو
+  STUDIO
+}
+
+/// وضعیت آپلود
+enum UploadStatus {
+  /// آپلود شده
+  UPLOADED
+  /// پردازش شده
+  PROCESSED
+  /// خراب
+  CORRUPTED
+}
+
+/// اندازه تتو
+enum TattooSize {
+  /// کوچک (زیر ۵ سانتی‌متر)
+  SMALL
+  /// متوسط (۵ تا ۱۵ سانتی‌متر)
+  MEDIUM
+  /// بزرگ (۱۵ تا ۳۰ سانتی‌متر)
+  LARGE
+  /// خیلی بزرگ (بالای ۳۰ سانتی‌متر)
+  EXTRA_LARGE
+  /// نیم‌آستین
+  HALF_SLEEVE
+  /// آستین کامل
+  FULL_SLEEVE
+}
+
+/// وضعیت نوبت‌دهی در دسترسی هنرمند
+enum DayOfWeek {
+  /// شنبه
+  SATURDAY
+  /// یکشنبه
+  SUNDAY
+  /// دوشنبه
+  MONDAY
+  /// سه‌شنبه
+  TUESDAY
+  /// چهارشنبه
+  WEDNESDAY
+  /// پنجشنبه
+  THURSDAY
+  /// جمعه
+  FRIDAY
+}
+
+// ============================================================================
+// مدل‌ها (Models)
+// ============================================================================
+
+/// مدل کاربر - پایه تمامی کاربران سیستم
+model User {
+  /// شناسه یکتای کاربر
+  id String @id @default(cuid())
+
+  /// شماره موبایل (اصلی‌ترین روش احراز هویت در ایران)
+  phone String @unique
+
+  /// ایمیل (اختیاری)
+  email String? @unique
+
+  /// رمز عبور هش شده
+  passwordHash String
+
+  /// نام نمایشی
+  displayName String
+
+  /// نام (فارسی)
+  firstName String?
+
+  /// نام خانوادگی (فارسی)
+  lastName String?
+
+  /// آدرس عکس پروفایل (URL در S3 یا Cloudinary)
+  avatarUrl String?
+
+  /// نقش کاربر
+  role UserRole
+
+  /// وضعیت حساب
+  status UserStatus @default(PENDING_VERIFICATION)
+
+  /// جنسیت
+  gender Gender?
+
+  /// تاریخ تولد (میلادی)
+  dateOfBirth DateTime?
+
+  /// شهر
+  city String?
+
+  /// استان / منطقه
+  province String?
+
+  /// آدرس (فقط برای استودیوها)
+  address String?
+
+  /// کد پستی
+  postalCode String?
+
+  /// بیوگرافی
+  bio String?
+
+  /// تصویر کاور
+  coverUrl String?
+
+  /// عرض جغرافیایی (نقشه)
+  latitude Float?
+
+  /// طول جغرافیایی (نقشه)
+  longitude Float?
+
+  /// توکن احراز هویت
+  authToken String? @unique
+
+  /// توکن فراموشی رمز عبور
+  resetToken String? @unique
+
+  /// انقضا توکن ریست
+  resetTokenExpiry DateTime?
+
+  /// توکن فعال‌سازی ایمیل
+  emailVerifyToken String? @unique
+
+  /// زبان ترجیحی کاربر
+  preferredLanguage String @default("fa")
+
+  /// آیا کاربر اعلان‌های push را فعال کرده
+  pushNotificationsEnabled Boolean @default(true)
+
+  /// آیا کاربر اعلان‌های ایمیل را فعال کرده
+  emailNotificationsEnabled Boolean @default(true)
+
+  /// آیا کاربر اعلان‌های پیامک را فعال کرده
+  smsNotificationsEnabled Boolean @default(true)
+
+  /// آخرین زمان آنلاین بودن
+  lastSeenAt DateTime?
+
+  /// تعداد کل رزروها
+  totalBookings Int @default(0)
+
+  /// رتبه‌بندی میانگین (از ۱ تا ۵)
+  averageRating Float @default(0)
+
+  /// تعداد نظرات دریافت شده
+  reviewCount Int @default(0)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با پروفایل هنرمند
+  artistProfile ArtistProfile?
+
+  /// رزروهای مشتری (به عنوان مشتری)
+  clientBookings Booking[] @relation("ClientBookings")
+
+  /// رزروهای هنرمند (به عنوان هنرمند)
+  artistBookings Booking[] @relation("ArtistBookings")
+
+  /// درخواست‌های سفارشی مشتری
+  customRequests CustomRequest[]
+
+  /// نظرات ارسال شده
+  givenReviews Review[] @relation("GivenReviews")
+
+  /// نظرات دریافت شده
+  receivedReviews Review[] @relation("ReceivedReviews")
+
+  /// پیام‌های ارسال شده
+  sentMessages Message[]
+
+  /// مکالمات
+  conversations ConversationParticipant[]
+
+  /// کیف پول
+  wallet Wallet?
+
+  /// تراکنش‌ها
+  transactions Transaction[]
+
+  /// پورتفولیوهای ذخیره شده (علاقه‌مندی‌ها)
+  savedPortfolios SavedPortfolio[]
+
+  /// لایک‌های پورتفولیو
+  portfolioLikes PortfolioLike[]
+  flashLikes FlashLike[]
+
+  /// کامنت‌های مجله
+  blogComments BlogComment[]
+  commentReactions CommentReaction[]
+
+  /// هش‌های رمز عبور قبلی (برای جلوگیری از استفاده مجدد)
+  passwordHistory PasswordHistory[]
+
+  /// فالوورهای کاربر
+  followers ArtistFollower[]
+
+  /// اعلان‌ها
+  notifications Notification[]
+
+  /// اعلان‌های ارسال شده
+  sentNotifications Notification[] @relation("NotificationSender")
+
+  /// پاسخ‌های تیکت
+  notificationReplies NotificationReply[]
+
+  /// لیست انتظار
+  waitlistEntries Waitlist[]
+
+  /// یادداشت‌های هنرمند
+  clientNotesReceived ClientNote[]
+
+  /// مقالات
+  blogPosts BlogPost[]
+
+  /// گزارش عملیات
+  auditLogs AuditLog[]
+
+  @@index([phone])
+  @@index([email])
+  @@index([role])
+  @@index([status])
+  @@index([city])
+  @@index([displayName])
+  @@map("users")
+}
+
+/// سابقه رمز عبور - جلوگیری از استفاده مجدد از رمزهای قبلی
+model PasswordHistory {
+  /// شناسه یکتای رکورد
+  id String @id @default(cuid())
+
+  /// شناسه کاربر
+  userId String
+
+  /// هش رمز عبور قبلی
+  passwordHash String
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("password_history")
+}
+
+/// پروفایل هنرمند - اطلاعات تخصصی هنرمندان تتو
+model ArtistProfile {
+  /// شناسه یکتای پروفایل
+  id String @id @default(cuid())
+
+  /// شناسه کاربر مرتبط
+  userId String @unique
+
+  /// نام هنری / Stage Name
+  artistName String
+
+  /// شناسه یکتای عمومی (برای لینک‌ها، مثال: @sara_ink)
+  slug String @unique
+
+  /// بیوگرافی کوتاه (حداکثر ۱۵۰ کاراکتر)
+  shortBio String?
+
+  /// بیوگرافی کامل
+  fullBio String?
+
+  /// سال شروع فعالیت
+  experienceYears Int?
+
+  /// سبک‌های تخصصی
+  specializations TattooStyle[]
+
+  /// آیا هنرمند تأیید شده توسط ادمین است
+  isVerified Boolean @default(false)
+
+  /// آیا هنرمند در حال پذیرش رزرو است
+  isAcceptingBookings Boolean @default(true)
+
+  /// آیا هنرمند سفارش سفارشی می‌پذیرد
+  acceptsCustomRequests Boolean @default(true)
+
+  /// حداقل قیمت (تومان)
+  minPrice BigInt?
+
+  /// حداکثر قیمت (تومان)
+  maxPrice BigInt?
+
+  /// مدت زمان تقریبی هر جلسه (دقیقه)
+  averageSessionDuration Int @default(120)
+
+  /// تعداد کل رزروهای تکمیل شده
+  completedBookings Int @default(0)
+
+  /// درآمد کل (تومان)
+  totalEarnings BigInt @default(0)
+
+  /// تعداد کل فالوورها
+  followerCount Int @default(0)
+
+  /// درصد کارمزد پلتفرم
+  platformFeePercent Float @default(15.0)
+
+  /// پلن اشتراک
+  plan ArtistPlan @default(FREE)
+
+  /// تاریخ انقضای پلن
+  planExpiresAt DateTime?
+
+  /// حداکثر نمونه‌کار
+  maxPortfolioItems Int @default(20)
+
+  /// حداکثر تتوی فلش
+  maxFlashItems Int @default(10)
+
+  /// لینک‌های شبکه اجتماعی
+  instagramUrl String?
+  telegramUrl String?
+  websiteUrl String?
+
+  /// شهر هنرمند
+  city String?
+
+  /// نمره رضایت مشتریان (از ۰ تا ۱۰۰)
+  satisfactionScore Float @default(0)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// استودیوهای مرتبط
+  studioArtists StudioArtist[]
+
+  /// پورتفولیو
+  portfolioItems PortfolioItem[]
+
+  /// تتوهای فلش (آماده)
+  flashTattoos FlashTattoo[]
+
+  /// جلسات در دسترس
+  availabilities Availability[]
+
+  /// فالوورها
+  followers ArtistFollower[]
+
+  /// درخواست‌های سفارشی
+  customRequests CustomRequest[]
+
+  /// سرویس‌ها
+  services Service[]
+
+  /// مرخصی‌ها
+  timeOffs TimeOff[]
+
+  /// لیست انتظار
+  waitlist Waitlist[]
+
+  /// یادداشت‌های مشتری
+  clientNotes ClientNote[]
+
+  @@index([slug])
+  @@index([isVerified])
+  @@index([isAcceptingBookings])
+  @@index([city])
+  @@index([experienceYears])
+  @@map("artist_profiles")
+}
+
+/// فالوور هنرمند - رابطه فالو کردن بین کاربران و هنرمندان
+model ArtistFollower {
+  /// شناسه یکتای رکورد
+  id String @id @default(cuid())
+
+  /// شناسه کاربر فالوور
+  userId String
+
+  /// شناسه هنرمند فالو شده
+  artistProfileId String
+
+  /// تاریخ فالو کردن
+  createdAt DateTime @default(now())
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// رابطه با پروفایل هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistProfileId])
+  @@index([userId])
+  @@index([artistProfileId])
+  @@map("artist_followers")
+}
+
+/// علاقه‌مندی‌های کاربر - پورتفولیوهای ذخیره شده
+model SavedPortfolio {
+  /// شناسه یکتای رکورد
+  id String @id @default(cuid())
+
+  /// شناسه کاربر
+  userId String
+
+  /// شناسه آیتم پورتفولیو
+  portfolioItemId String
+
+  /// تاریخ ذخیره
+  createdAt DateTime @default(now())
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// رابطه با آیتم پورتفولیو
+  portfolioItem PortfolioItem @relation(fields: [portfolioItemId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, portfolioItemId])
+  @@index([userId])
+  @@map("saved_portfolios")
+}
+
+/// لایک نمونه کار
+model PortfolioLike {
+  id String @id @default(cuid())
+  userId String
+  portfolioItemId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  portfolioItem PortfolioItem @relation(fields: [portfolioItemId], references: [id], onDelete: Cascade)
+  @@unique([userId, portfolioItemId])
+  @@index([userId])
+  @@index([portfolioItemId])
+  @@map("portfolio_likes")
+}
+
+model FlashLike {
+  id String @id @default(cuid())
+  userId String
+  flashTattooId String
+  createdAt DateTime @default(now())
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  flashTattoo FlashTattoo @relation(fields: [flashTattooId], references: [id], onDelete: Cascade)
+  @@unique([userId, flashTattooId])
+  @@index([userId])
+  @@index([flashTattooId])
+  @@map("flash_likes")
+}
+
+/// استودیوی تتو - مکان فیزیکی
+model Studio {
+  /// شناسه یکتای استودیو
+  id String @id @default(cuid())
+
+  /// نام استودیو
+  name String
+
+  /// شناسه عمومی (Slug)
+  slug String @unique
+
+  /// توضیحات کوتاه
+  description String?
+
+  /// توضیحات کامل
+  fullDescription String?
+
+  /// آدرس کامل
+  address String
+
+  /// شهر
+  city String
+
+  /// استان
+  province String
+
+  /// کد پستی
+  postalCode String?
+
+  /// شماره تلفن استودیو
+  phone String
+
+  /// ایمیل استودیو
+  email String?
+
+  /// عرض جغرافیایی
+  latitude Float?
+
+  /// طول جغرافیایی
+  longitude Float?
+
+  /// تصویر شاخص استودیو
+  coverImage String?
+
+  /// لیست عکس‌های استودیو
+  images String[]
+
+  /// آیا استودیو فعال است
+  isActive Boolean @default(true)
+
+  /// آیا استودیو تأیید شده
+  isVerified Boolean @default(false)
+
+  /// ساعت کاری (JSON string)
+  workingHours Json?
+
+  /// میانگین رتبه‌بندی
+  averageRating Float @default(0)
+
+  /// تعداد نظرات
+  reviewCount Int @default(0)
+
+  /// تعداد هنرمندان فعال
+  artistCount Int @default(0)
+
+  /// لینک‌های شبکه اجتماعی
+  instagramUrl String?
+  telegramUrl String?
+  websiteUrl String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// هنرمندان استودیو
+  studioArtists StudioArtist[]
+
+  /// رزروهای استودیو
+  bookings Booking[]
+
+  @@index([slug])
+  @@index([city])
+  @@index([province])
+  @@index([isActive])
+  @@index([isVerified])
+  @@index([averageRating])
+  @@index([name])
+  @@map("studios")
+}
+
+/// رابطه هنرمند-استودیو (M2M)
+model StudioArtist {
+  /// شناسه یکتای رکورد
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// شناسه استودیو
+  studioId String
+
+  /// آیا هنرمند در حال حاضر در این استودیو فعال است
+  isActive Boolean @default(true)
+
+  /// تاریخ شروع همکاری
+  startDate DateTime?
+
+  /// تاریخ پایان همکاری
+  endDate DateTime?
+
+  /// درصد سهم استودیو از درآمد
+  studioSharePercent Float @default(30.0)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با پروفایل هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  /// رابطه با استودیو
+  studio Studio @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@unique([artistProfileId, studioId])
+  @@index([artistProfileId])
+  @@index([studioId])
+  @@map("studio_artists")
+}
+
+/// سرویس‌های ارائه شده توسط هنرمند
+model Service {
+  /// شناسه یکتای سرویس
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// رابطه با پروفایل هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  /// نام سرویس
+  name String
+
+  /// توضیحات سرویس
+  description String?
+
+  /// قیمت پایه (تومان)
+  basePrice BigInt
+
+  /// حداکثر قیمت (تومان)
+  maxPrice BigInt?
+
+  /// مدت زمان تقریبی (دقیقه)
+  durationMinutes Int
+
+  /// اندازه‌های پشتیبانی شده
+  supportedSizes TattooSize[]
+
+  /// آیا سرویس فعال است
+  isActive Boolean @default(true)
+
+  /// تعداد رزروهای این سرویس
+  bookingCount Int @default(0)
+
+  /// حداقل ساعت لغو رزرو (پیش‌فرض ۲۴ ساعت)
+  cancellationNoticeHours Int @default(24)
+
+  /// نوع بیعانه (FIXED یا PERCENTAGE)
+  depositType String @default("PERCENTAGE")
+
+  /// مقدار بیعانه (تومان برای FIXED، درصد برای PERCENTAGE)
+  depositValue BigInt @default(30)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رزروهای مرتبط
+  bookings Booking[]
+
+  @@index([artistProfileId])
+  @@index([isActive])
+  @@map("services")
+}
+
+/// آیتم پورتفولیو - نمونه کارهای هنرمند
+model PortfolioItem {
+  /// شناسه یکتای آیتم
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// عنوان اثر
+  title String
+
+  /// توضیحات
+  description String?
+
+  /// لیست URL تصاویر
+  images String[]
+
+  /// ویدئو (اختیاری)
+  videoUrl String?
+
+  /// سبک تتو
+  style TattooStyle
+
+  /// اندازه تتو
+  size TattooSize?
+
+  /// مدت زمان انجام (دقیقه)
+  durationMinutes Int?
+
+  /// قیمت (تومان)
+  price BigInt?
+
+  /// تگ‌ها برای جستجو
+  tags String[]
+
+  /// آیا کار سفارشی بوده
+  isCustom Boolean @default(false)
+
+  /// تعداد لایک‌ها
+  likeCount Int @default(0)
+
+  /// تعداد ذخیره‌ها
+  saveCount Int @default(0)
+
+  /// وضعیت انتشار
+  status PortfolioStatus @default(PUBLISHED)
+
+  /// ترتیب نمایش (هرچه کمتر اولویت بالاتر)
+  sortOrder Int @default(0)
+
+  /// تاریخ انتشار
+  publishedAt DateTime?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  /// نظرات
+  reviews Review[]
+
+  /// ذخیره‌کنندگان
+  savedBy SavedPortfolio[]
+
+  /// لایک‌ها
+  likes PortfolioLike[]
+
+  @@index([artistProfileId])
+  @@index([style])
+  @@index([status])
+  @@index([likeCount])
+  @@index([saveCount])
+  @@index([createdAt])
+  @@map("portfolio_items")
+}
+
+/// تتوی فلش - طرح‌های آماده برای فروش
+model FlashTattoo {
+  /// شناسه یکتای طرح
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند خالق
+  artistProfileId String
+
+  /// عنوان طرح
+  title String
+
+  /// توضیحات
+  description String?
+
+  /// URL تصویر اصلی
+  imageUrl String
+
+  /// URL تصویر دوم (نسخه سیاه و سفید)
+  alternativeImageUrl String?
+
+  /// سبک تتو
+  style TattooStyle
+
+  /// اندازه پیشنهادی
+  suggestedSize TattooSize
+
+  /// قیمت (تومان)
+  price BigInt
+
+  /// آیا طرح موجود است (فروخته نشده)
+  isAvailable Boolean @default(true)
+
+  /// وضعیت تأیید اثر (PENDING=در انتظار بررسی، APPROVED=تأیید و منتشر، REJECTED=رد شده)
+  status String @default("APPROVED")
+
+  /// تاریخ تأیید توسط ادمین
+  approvedAt DateTime?
+
+  /// آیا طرح اختصاصی است (فقط یک بار فروخته می‌شود)
+  isExclusive Boolean @default(false)
+
+  /// تعداد دفعات فروخته شده
+  soldCount Int @default(0)
+
+  /// تعداد بازدید
+  viewCount Int @default(0)
+
+  /// تگ‌ها
+  tags String[]
+
+  /// رنگ‌های استفاده شده
+  colors String[]
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+  flashLikes FlashLike[]
+
+  @@index([artistProfileId])
+  @@index([style])
+  @@index([isAvailable])
+  @@index([price])
+  @@index([isExclusive])
+  @@index([createdAt])
+  @@map("flash_tattoos")
+}
+
+/// جلسات در دسترس هنرمند - تقویم نوبت‌دهی
+model Availability {
+  /// شناسه یکتای جلسه
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// روز هفته
+  dayOfWeek DayOfWeek
+
+  /// ساعت شروع (HH:MM)
+  startTime String
+
+  /// ساعت پایان (HH:MM)
+  endTime String
+
+  /// آیا این بازه زمانی فعال است
+  isActive Boolean @default(true)
+
+  /// یادداشت (مثلاً: فقط با وقت قبلی)
+  note String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  /// نوبت‌های رزرو شده در این بازه
+  bookings Booking[]
+
+  @@index([artistProfileId])
+  @@index([dayOfWeek])
+  @@index([isActive])
+  @@map("availabilities")
+}
+
+/// مرخصی / روزهای تعطیل هنرمند
+model TimeOff {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// تاریخ شروع (میلادی)
+  startDate DateTime
+
+  /// تاریخ پایان (میلادی)
+  endDate DateTime
+
+  /// عنوان (مثال: تعطیلات نوروز)
+  title String?
+
+  /// یادداشت
+  note String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@index([artistProfileId])
+  @@index([startDate])
+  @@index([endDate])
+  @@map("time_offs")
+}
+
+/// رزرو نوبت
+model Booking {
+  /// شناسه یکتای رزرو
+  id String @id @default(cuid())
+
+  /// شماره رزرو (قابل نمایش به کاربر)
+  bookingNumber String @unique
+
+  /// شناسه مشتری
+  clientId String
+
+  /// شناسه هنرمند
+  artistId String
+
+  /// شناسه استودیو (اختیاری)
+  studioId String?
+
+  /// شناسه سرویس
+  serviceId String?
+
+  /// شناسه بازه در دسترس
+  availabilityId String?
+
+  /// تاریخ رزرو شده
+  scheduledDate DateTime
+
+  /// ساعت شروع
+  startTime String
+
+  /// ساعت پایان
+  endTime String
+
+  /// عنوان رزرو
+  title String
+
+  /// توضیحات مشتری
+  description String?
+
+  /// مکان (آدرس یا نام استودیو)
+  location String?
+
+  /// عرض جغرافیایی
+  latitude Float?
+
+  /// طول جغرافیایی
+  longitude Float?
+
+  /// اندازه تتو
+  size TattooSize?
+
+  /// سبک تتو
+  style TattooStyle?
+
+  /// جای تتو در بدن
+  bodyPlacement String?
+
+  /// تصویر رفرنس (URL)
+  referenceImageUrl String?
+
+  /// تصویر طرح مورد نظر مشتری (آپلود شده در سرور)
+  designImageUrl String?
+
+  /// نوع رنگی بودن تتو
+  colorType String?
+
+  /// قیمت توافق شده (تومان)
+  agreedPrice BigInt?
+
+  /// مدت زمان تقریعی (دقیقه)
+  estimatedDuration Int?
+
+  /// وضعیت رزرو
+  status BookingStatus @default(REQUESTED)
+
+  /// دلیل لغو
+  cancellationReason String?
+
+  /// یادداشت‌های هنرمند
+  artistNotes String?
+
+  /// یادداشت‌های داخلی (ادمین)
+  adminNotes String?
+
+  /// شناسه درخواست سفارشی مرتبط
+  customRequestId String? @unique
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// تاریخ تکمیل
+  completedAt DateTime?
+
+  /// رابطه با مشتری
+  client User @relation("ClientBookings", fields: [clientId], references: [id], onDelete: Restrict)
+
+  /// رابطه با هنرمند
+  artist User @relation("ArtistBookings", fields: [artistId], references: [id], onDelete: Restrict)
+
+  /// رابطه با استودیو
+  studio Studio? @relation(fields: [studioId], references: [id], onDelete: SetNull)
+
+  /// رابطه با سرویس
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+
+  /// رابطه با بازه در دسترس
+  availability Availability? @relation(fields: [availabilityId], references: [id], onDelete: SetNull)
+
+  /// پرداخت‌ها
+  payments Payment[]
+
+  /// نظرات
+  reviews Review[]
+
+  /// درخواست‌های سفارشی مرتبط
+  customRequest CustomRequest? @relation(fields: [customRequestId], references: [id], onDelete: SetNull)
+
+  @@index([clientId])
+  @@index([artistId])
+  @@index([studioId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([createdAt])
+  @@index([bookingNumber])
+  @@map("bookings")
+}
+
+/// درخواست سفارشی تتو
+model CustomRequest {
+  /// شناسه یکتای درخواست
+  id String @id @default(cuid())
+
+  /// شناسه مشتری
+  clientId String
+
+  /// شناسه هنرمند
+  artistId String
+
+  /// عنوان درخواست
+  title String
+
+  /// توضیحات کامل (شامل جزئیات طرح مورد نظر)
+  description String
+
+  /// تصاویر رفرنس
+  referenceImages String[]
+
+  /// اندازه مورد نظر
+  preferredSize TattooSize?
+
+  /// سبک مورد نظر
+  preferredStyle TattooStyle?
+
+  /// جای مورد نظر در بدن
+  bodyPlacement String?
+
+  /// بودجه تقریبی مشتری (تومان)
+  budget BigInt?
+
+  /// تاریخ مورد نظر شروع
+  preferredStartDate DateTime?
+
+  /// آیا مشتری انعطاف‌پذیری در زمان دارد
+  isFlexibleWithDate Boolean @default(true)
+
+  /// قیمت پیشنهادی هنرمند (تومان)
+  quotedPrice BigInt?
+
+  /// توضیحات قیمت هنرمند
+  quoteNotes String?
+
+  /// تاریخ انقضا پیشنهاد
+  quoteExpiry DateTime?
+
+  /// وضعیت درخواست
+  status CustomRequestStatus @default(NEW)
+
+  /// دلیل رد (در صورت رد شدن)
+  rejectionReason String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با مشتری
+  client User @relation(fields: [clientId], references: [id], onDelete: Restrict)
+
+  /// رابطه با هنرمند
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Restrict)
+
+  /// شناسه رزرو مرتبط
+  bookingId String? @unique
+
+  /// رزرو مرتبط
+  booking Booking?
+
+  @@index([clientId])
+  @@index([artistId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("custom_requests")
+}
+
+/// پرداخت
+model Payment {
+  /// شناسه یکتای پرداخت
+  id String @id @default(cuid())
+
+  /// شماره پرداخت
+  paymentNumber String @unique
+
+  /// شناسه رزرو مرتبط
+  bookingId String
+
+  /// شناسه کیف پول هنرمند (در صورت پرداخت به کیف پول)
+  walletId String?
+
+  /// مبلغ (تومان)
+  amount BigInt
+
+  /// کارمزد پلتفرم (تومان)
+  platformFee BigInt @default(0)
+
+  /// کارمزد استودیو (تومان)
+  studioFee BigInt @default(0)
+
+  /// مبلغ خالص هنرمند (تومان)
+  artistNetAmount BigInt @default(0)
+
+  /// روش پرداخت
+  method PaymentMethod
+
+  /// وضعیت پرداخت
+  status PaymentStatus @default(PENDING)
+
+  /// نوع پرداخت: DEPOSIT (بیعانه ۲۰٪ = کارمزد پلتفرم) یا REMAINDER (باقی‌مانده = سهم هنرمند)
+  purpose String @default("DEPOSIT")
+
+  /// شناسه تراکنش درگاه پرداخت
+  gatewayTransactionId String?
+
+  /// شناسه ارجاع درگاه پرداخت
+  gatewayRefId String?
+
+  /// پاسخ خام درگاه پرداخت
+  gatewayResponse Json?
+
+  /// کد رهگیری
+  trackingCode String?
+
+  /// یادداشت
+  note String?
+
+  /// تاریخ پرداخت
+  paidAt DateTime?
+
+  /// تاریخ بازپرداخت
+  refundedAt DateTime?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با رزرو
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)  /// رابطه با کیف پول
+  wallet Wallet? @relation(fields: [walletId], references: [id], onDelete: SetNull)
+
+  /// شناسه تراکنش مرتبط
+  transactionId String? @unique
+
+  /// تراکنش مرتبط
+  transaction Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+
+
+
+  @@index([bookingId])
+  @@index([walletId])
+  @@index([status])
+  @@index([method])
+  @@index([gatewayTransactionId])
+  @@index([createdAt])
+  @@map("payments")
+}
+
+/// نظر مشتری
+model Review {
+  /// شناسه یکتای نظر
+  id String @id @default(cuid())
+
+  /// شناسه نویسنده نظر
+  authorId String
+
+  /// شناسه دریافت‌کننده نظر
+  recipientId String
+
+  /// شناسه رزرو مرتبط
+  bookingId String?
+
+  /// شناسه آیتم پورتفولیو (نظر روی کار)
+  portfolioItemId String?
+
+  /// رتبه‌بندی کلی (۱ تا ۵)
+  rating Int
+
+  /// امتیاز ۰ تا ۱۰۰ (معیار اصلی پروفایل هنرمند)
+  score Int?
+
+  /// رتبه‌بندی خلاقیت
+  creativityRating Int?
+
+  /// رتبه‌بندی حرفه‌ای بودن
+  professionalismRating Int?
+
+  /// رتبه‌بندی تمیزی کار
+  cleanlinessRating Int?
+
+  /// رتبه‌بندی ارتباط
+  communicationRating Int?
+
+  /// متن نظر
+  comment String
+
+  /// پاسخ هنرمند به نظر
+  artistReply String?
+
+  /// تاریخ پاسخ هنرمند
+  artistReplyAt DateTime?
+
+  /// آیا نظر تأیید شده
+  isVerified Boolean @default(false)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با نویسنده
+  author User @relation("GivenReviews", fields: [authorId], references: [id], onDelete: Cascade)
+
+  /// رابطه با دریافت‌کننده
+  recipient User @relation("ReceivedReviews", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  /// رابطه با رزرو
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+
+  /// رابطه با آیتم پورتفولیو
+  portfolioItem PortfolioItem? @relation(fields: [portfolioItemId], references: [id], onDelete: SetNull)
+
+  @@index([authorId])
+  @@index([recipientId])
+  @@index([bookingId])
+  @@index([portfolioItemId])
+  @@index([rating])
+  @@index([createdAt])
+  @@map("reviews")
+}
+
+/// کیف پول هنرمند
+model Wallet {
+  /// شناسه یکتای کیف پول
+  id String @id @default(cuid())
+
+  /// شناسه مالک
+  ownerId String @unique
+
+  /// موجودی کل (تومان)
+  balance BigInt @default(0)
+
+  /// موجودی قابل برداشت (تومان)
+  withdrawableBalance BigInt @default(0)
+
+  /// موجودی در انتظار تسویه (تومان)
+  pendingBalance BigInt @default(0)
+
+  /// مسدود شده (تومان) - برای پرداخت‌های ناموفق
+  frozenBalance BigInt @default(0)
+
+  /// کل واریزی‌ها
+  totalDeposited BigInt @default(0)
+
+  /// کل برداشت‌ها
+  totalWithdrawn BigInt @default(0)
+
+  /// شماره کارت بانکی (آخرین ۴ رقم)
+  lastFourCardNumber String?
+
+  /// شماره شبا
+  iban String?
+
+  /// نام صاحب حساب
+  accountHolderName String?
+
+  /// بانک
+  bankName String?
+
+  /// آیا کیف پول فعال است
+  isActive Boolean @default(true)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با مالک
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  /// تراکنش‌ها
+  transactions Transaction[]
+
+  /// پرداخت‌ها
+  payments Payment[]
+
+  /// درخواست‌های برداشت
+  withdrawalRequests WithdrawalRequest[]
+
+  @@index([ownerId])
+  @@map("wallets")
+}
+
+/// تراکنش کیف پول
+model Transaction {
+  /// شناسه یکتای تراکنش
+  id String @id @default(cuid())
+
+  /// شناسه کیف پول
+  walletId String
+
+  /// شناسه کاربر مرتبط
+  userId String
+
+  /// نوع تراکنش
+  type TransactionType
+
+  /// مبلغ (تومان)
+  amount BigInt
+
+  /// موجودی قبل از تراکنش
+  balanceBefore BigInt
+
+  /// موجودی بعد از تراکنش
+  balanceAfter BigInt
+
+  /// توضیحات
+  description String
+
+  /// شناسه مرجع (رزرو، پرداخت و...)
+  referenceId String?
+
+  /// نوع مرجع
+  referenceType String?
+
+  /// وضعیت تراکنش
+  isCompleted Boolean @default(false)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با کیف پول
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  /// پرداخت مرتبط
+  payment Payment?
+
+  @@index([walletId])
+  @@index([userId])
+  @@index([type])
+  @@index([referenceId])
+  @@index([createdAt])
+  @@map("transactions")
+}
+
+/// درخواست برداشت از کیف پول
+model WithdrawalRequest {
+  /// شناسه یکتای درخواست
+  id String @id @default(cuid())
+
+  /// شناسه کیف پول
+  walletId String
+
+  /// مبلغ درخواستی (تومان)
+  amount BigInt
+
+  /// شماره شبا مقصد
+  destinationIban String
+
+  /// شماره کارت مقصد (اختیاری — برای واریز سریع)
+  cardNumber String?
+
+  /// نام صاحب حساب مقصد
+  accountHolderName String
+
+  /// بانک مقصد
+  bankName String?
+
+  /// وضعیت درخواست
+  isApproved Boolean?
+
+  /// تاریخ بررسی
+  reviewedAt DateTime?
+
+  /// یادداشت ادمین
+  adminNote String?
+
+  /// شماره پیگیری انتقال
+  transferTrackingCode String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با کیف پول
+  wallet Wallet @relation(fields: [walletId], references: [id], onDelete: Restrict)
+
+  @@index([walletId])
+  @@index([isApproved])
+  @@index([createdAt])
+  @@map("withdrawal_requests")
+}
+
+/// مکالمه / چت
+model Conversation {
+  /// شناسه یکتای مکالمه
+  id String @id @default(cuid())
+
+  /// عنوان مکالمه
+  title String?
+
+  /// شناسه رزرو مرتبط
+  bookingId String? @unique
+
+  /// شناسه درخواست سفارشی مرتبط
+  requestId String? @unique
+
+  /// آیا مکالمه فعال است
+  isActive Boolean @default(true)
+
+  /// آخرین پیام
+  lastMessageAt DateTime?
+
+  /// متن آخرین پیام
+  lastMessagePreview String?
+
+  /// تعداد پیام‌های خوانده نشده
+  unreadCount Int @default(0)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// شرکت‌کنندگان
+  participants ConversationParticipant[]
+
+  /// پیام‌ها
+  messages Message[]
+
+  @@index([lastMessageAt])
+  @@index([isActive])
+  @@index([bookingId])
+  @@index([requestId])
+  @@map("conversations")
+}
+
+/// شرکت‌کننده مکالمه
+model ConversationParticipant {
+  /// شناسه یکتای رکورد
+  id String @id @default(cuid())
+
+  /// شناسه مکالمه
+  conversationId String
+
+  /// شناسه کاربر
+  userId String
+
+  /// تعداد پیام‌های خوانده نشده
+  unreadCount Int @default(0)
+
+  /// آخرین پیام خوانده شده
+  lastReadAt DateTime?
+
+  /// آیا کاربر مکالمه را بی‌صدا کرده
+  isMuted Boolean @default(false)
+
+  /// آیا کاربر مکالمه را آرشیو کرده
+  isArchived Boolean @default(false)
+
+  /// تاریخ پیوستن
+  joinedAt DateTime @default(now())
+
+  /// رابطه با مکالمه
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+/// پیام چت
+model Message {
+  /// شناسه یکتای پیام
+  id String @id @default(cuid())
+
+  /// شناسه مکالمه
+  conversationId String
+
+  /// شناسه فرستنده
+  senderId String
+
+  /// متن پیام
+  content String
+
+  /// لیست فایل‌های پیوست (تصاویر، ویدئو)
+  attachments String[]
+
+  /// نوع پیام (متن، تصویر، فایل، سیستمی)
+  messageType String @default("text")
+
+  /// وضعیت پیام
+  status MessageStatus @default(SENT)
+
+  /// آیا پیام حذف شده
+  isDeleted Boolean @default(false)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با مکالمه
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  /// رابطه با فرستنده
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("messages")
+}
+
+/// پشتیبانی از جستجوی فول‌تکست
+model SearchIndex {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// نوع موجودیت
+  entityType String
+
+  /// شناسه موجودیت
+  entityId String
+
+  /// متن قابل جستجو
+  searchText String
+
+  /// فیلترهای جستجو (JSON)
+  filters Json?
+
+  /// شاخص رتبه‌بندی
+  rank Float @default(0)
+
+  /// تاریخ به‌روزرسانی
+  updatedAt DateTime @default(now())
+
+  @@unique([entityType, entityId])
+  @@index([entityType])
+  @@index([rank])
+  @@map("search_index")
+}
+
+// ============================================================================
+// مدل‌های جدید Stage 7
+// ============================================================================
+
+/// اعلان درون‌برنامه‌ای
+model Notification {
+  /// شناسه یکتای اعلان
+  id String @id @default(cuid())
+
+  /// شناسه کاربر دریافت‌کننده
+  userId String
+
+  /// عنوان اعلان
+  title String
+
+  /// متن اعلان
+  message String
+
+  /// نوع اعلان
+  type NotificationType @default(INFO)
+
+  /// آیا خوانده شده
+  isRead Boolean @default(false)
+
+  /// لینک اختیاری (برای ناوبری)
+  link String?
+
+  /// داده‌های اضافی (JSON)
+  data Json?
+
+  /// فایل پیوست (URL)
+  fileUrl String?
+  fileName String?
+
+  /// آیا قابل پاسخ است (تیکت)
+  isTicket Boolean @default(false)
+
+  /// شناسه فرستنده (برای پیام‌های ادمین)
+  senderId String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// رابطه با فرستنده
+  sender User? @relation("NotificationSender", fields: [senderId], references: [id], onDelete: SetNull)
+
+  /// پاسخ‌ها
+  replies NotificationReply[]
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+/// پاسخ‌های تیکت اعلان
+model NotificationReply {
+  /// شناسه یکتای پاسخ
+  id String @id @default(cuid())
+
+  /// شناسه اعلان مربوطه
+  notificationId String
+
+  /// شناسه فرستنده پاسخ
+  senderId String
+
+  /// متن پاسخ
+  message String
+
+  /// فایل پیوست (URL)
+  fileUrl String?
+  fileName String?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با اعلان
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  /// رابطه با فرستنده
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId])
+  @@index([senderId])
+  @@index([createdAt])
+  @@map("notification_replies")
+}
+
+/// انوع اعلان
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  BOOKING
+  PAYMENT
+  MESSAGE
+}
+
+/// صفحه CMS
+model CmsPage {
+  /// شناسه یکتای صفحه
+  id String @id @default(cuid())
+
+  /// شناسه URL (یکتا)
+  slug String @unique
+
+  /// عنوان صفحه
+  title String
+
+  /// محتوا (Markdown)
+  content String
+
+  /// عنوان SEO
+  seoTitle String?
+
+  /// توضیحات SEO
+  seoDescription String?
+
+  /// HTML سفارشی (برای ویژوال بلدر آینده)
+  customHtml String?
+
+  /// CSS سفارشی
+  customCss String?
+
+  /// JS سفارشی
+  customJs String?
+
+  /// آیا صفحه فعال است
+  isActive Boolean @default(true)
+
+  /// نمایش هدر پیش‌فرض سایت در این صفحه
+  showHeader Boolean @default(true)
+
+  /// نمایش فوتر پیش‌فرض سایت در این صفحه
+  showFooter Boolean @default(true)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([isActive])
+  @@map("cms_pages")
+}
+
+/// لیست انتظار هنرمند
+model Waitlist {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// شناسه کاربر
+  userId String
+
+  /// شناسه هنرمند
+  artistProfileId String
+
+  /// سبک مورد نظر
+  preferredStyle TattooStyle?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با کاربر
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// رابطه با هنرمند
+  artistProfile ArtistProfile @relation(fields: [artistProfileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, artistProfileId])
+  @@index([userId])
+  @@index([artistProfileId])
+  @@map("waitlist")
+}
+
+// ============================================================================
+// مدل‌های جدید - مرحله نهایی
+// ============================================================================
+
+/// مقالات مجله
+model BlogPost {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// شناسه URL (یکتا)
+  slug String @unique
+
+  /// عنوان مقاله
+  title String
+
+  /// خلاصه
+  excerpt String
+
+  /// محتوا (Markdown)
+  content String
+
+  /// تصویر کاور
+  coverImage String?
+
+  /// شناسه نویسنده (ادمین)
+  authorId String
+
+  /// دسته‌بندی
+  category BlogCategory @default(NEWS)
+
+  /// آیا منتشر شده
+  isPublished Boolean @default(false)
+
+  /// مقاله ویژه (هایلایت قرمز در مجله)
+  isFeatured Boolean @default(false)
+
+  /// اطلاعیه (هایلایت زرد در مجله)
+  isNotice Boolean @default(false)
+
+  /// تعداد بازدید
+  views Int @default(0)
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// تاریخ آخرین به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  /// رابطه با نویسنده
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([slug])
+  @@index([isPublished])
+  @@index([category])
+  @@index([createdAt])
+  @@map("blog_posts")
+}
+
+/// دسته‌بندی مقالات
+enum BlogCategory {
+  AFTER_CARE
+  STYLES
+  NEWS
+  ANNOUNCEMENT
+  GUIDES
+}
+
+/// یادداشت هنرمند درباره مشتری
+model ClientNote {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// شناسه هنرمند
+  artistId String
+
+  /// شناسه مشتری
+  clientId String
+
+  /// متن یادداشت
+  note String
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با هنرمند
+  artist ArtistProfile @relation(fields: [artistId], references: [id], onDelete: Cascade)
+
+  /// رابطه با مشتری
+  client User @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@index([artistId])
+  @@index([clientId])
+  @@map("client_notes")
+}
+
+/// تنظیمات سیستم
+model SystemSetting {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// کلید تنظیم
+  key String @unique
+
+  /// مقدار
+  value String
+
+  /// توضیحات
+  description String?
+
+  /// تاریخ به‌روزرسانی
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("system_settings")
+}
+
+/// گزارش عملیات ادمین
+model AuditLog {
+  /// شناسه یکتای
+  id String @id @default(cuid())
+
+  /// شناسه ادمین
+  adminId String
+
+  /// نوع عملیات
+  action String
+
+  /// جزئیات (JSON)
+  details Json?
+
+  /// تاریخ ایجاد
+  createdAt DateTime @default(now())
+
+  /// رابطه با ادمین
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  read      Boolean  @default(false)
+  replied   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+  @@index([read])
+  @@map("contact_messages")
+}
+
+model NewsletterSubscriber {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([isActive])
+  @@map("newsletter_subscribers")
+}
+
+// ============================================================================
+// کامنت‌های مطالب مجله
+// ============================================================================
+model BlogComment {
+  id String @id @default(cuid())
+
+  /// شناسه مقاله
+  postSlug String
+
+  /// شناسه کاربر نویسنده کامنت
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  /// متن کامنت
+  content String
+
+  /// آیا تأیید شده توسط ادمین
+  isApproved Boolean @default(false)
+
+  /// لایک‌ها
+  likeCount Int @default(0)
+
+  /// دیس‌لایک‌ها
+  dislikeCount Int @default(0)
+
+  /// کامنت والد (برای ریپلای)
+  parentId String?
+  parent BlogComment? @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies BlogComment[] @relation("CommentReplies")
+  reactions CommentReaction[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([postSlug])
+  @@index([userId])
+  @@index([isApproved])
+  @@map("blog_comments")
+}
+
+// ============================================================================
+// واکنش‌های کامنت (لایک/دیس‌لایک)
+// ============================================================================
+model CommentReaction {
+  id String @id @default(cuid())
+  commentId String
+  comment BlogComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId String
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type String // "LIKE" or "DISLIKE"
+  createdAt DateTime @default(now())
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@map("comment_reactions")
+}

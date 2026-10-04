@@ -1,0 +1,78 @@
+# ============================================================================
+# Docker Compose - نوبت مارکت
+# ============================================================================
+
+version: "3.8"
+
+services:
+  # ─── اپلیکیشن Next.js ───
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nobat-market-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://nobat-market:nobat_market_secret@nobat-market-db:5432/nobat_market?schema=public
+      REDIS_URL: redis://nobat-market-redis:6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-nobat_market_redis_secret}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/public/uploads
+    networks:
+      - nobat-market
+    shm_size: "1gb"
+
+  # ─── دیتابیس PostgreSQL ───
+  db:
+    image: postgres:16-alpine
+    container_name: nobat-market-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nobat_market
+      POSTGRES_USER: nobat-market
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-nobat_market_secret}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # DB port not exposed externally - internal network only
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nobat-market"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - nobat-market
+
+  # ─── Redis ───
+  redis:
+    image: redis:7-alpine
+    container_name: nobat-market-redis
+    restart: unless-stopped
+    command: redis-server --requirepass ${REDIS_PASSWORD:-nobat_market_redis_secret} --maxmemory 256mb --maxmemory-policy allkeys-lru
+    # Redis port not exposed externally
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - nobat-market
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads:
+
+networks:
+  nobat-market:
+    driver: bridge
